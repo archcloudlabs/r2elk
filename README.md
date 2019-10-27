@@ -1,7 +1,7 @@
 ### R2ELk
 <p align="center">
 <!-- <img width="264" height="61" src="https://i.imgur.com/EZvIdl2.png"> --!>
-<img src="https://i.imgur.com/EZvIdl2.png" /> 
+<img src="https://i.imgur.com/RYc1qEU.png" /> 
 <br />
 <i>Metadata Binary Triage into ELK</i>
 </p>
