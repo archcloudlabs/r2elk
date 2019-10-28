@@ -1,6 +1,5 @@
 ### R2ELk
 <p align="center">
-<!-- <img width="264" height="61" src="https://i.imgur.com/EZvIdl2.png"> --!>
 <img src="https://i.imgur.com/RYc1qEU.png" /> 
 <br />
 <i>Metadata Binary Triage into ELK</i>
@@ -8,7 +7,7 @@
 
 ## About The Project
 R2ELK leverages the Python bindings of [radare2's API](https://github.com/radareorg/radare2-r2pipe) 
-to extract metadata from ELK and PE files.
+to extract metadata from ELF and PE files.
 
 Data that is attempted to be extracted is as follows:
 * File name 
@@ -23,7 +22,7 @@ Data that is attempted to be extracted is as follows:
 * Stripped
 * Static
 * Signed
-* PDB files
+* PDB file paths
 * Base address
 * Imports
 * Exports
@@ -31,13 +30,16 @@ Data that is attempted to be extracted is as follows:
 ## Installation
 
 ### Dependencies
-* Python requests
-* r2pipe
+* [Requests](https://github.com/psf/requests)
+* [r2pipe](https://github.com/radareorg/radare2-r2pipe)
 ```
-pip install -r requirements.txt
+sudo pip3 install -r requirements.txt
 ```
 
 ## Example Usage
+*Note: The examples below are for direct ingestion into Elasticsearch not
+Logstash". By default the index is "samples"*
+
 * Get metadata about a single binary:
 ```
 /r2elk.py --file /bin/ls | python -m json.tool
@@ -50,5 +52,5 @@ pip install -r requirements.txt
 
 * Get metadata from a directory of binaries and POST to Elastic server:
 ```
-/r2elk.py --directory /bin/ --rhost 127.0.0.1 --rport 9200
+./r2elk.py --file /bin/ls --rhost http://127.0.0.1 --rport 9200 --index testing
 ```
