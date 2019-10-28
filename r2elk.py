@@ -32,6 +32,7 @@ class Utils():
         Purpose: List all files within a directory and run R2 triage methods.
                  This method will not follow symlinks.
                  https://docs.python.org/3.7/library/stat.html
+        Parameters: [directory] string path to directory of binaries.
         Return: List of files within a directory.
         '''
         normal_files = []
@@ -49,8 +50,17 @@ class Utils():
                     print("[*] Skipping processing of %s" % str(file_path))
         return normal_files
 
+    def __check__url__(self, url):
+        '''
+        Name: __check_url__
+        Parameters: [url] string value
+        Purpose: Verify that HTTP or HTTPS is within the CLI remote URL.
+        '''
+        if url[0:4] != ("http" or "https"):
+            return False
+        return True
 
-    def elk_post(self, data, rhost, rport):
+    def elk_post(self, post_data, rhost, rport, index):
         '''
         Name: elk_post
         Purpose: Post JSON data to Elastic endpoint (could also be logstash)
@@ -58,9 +68,18 @@ class Utils():
             [rport] remote port that Elastic is running on.
         Return: boolean based on success or failure of HTTP POST.
         '''
+        if self.__check__url__(rhost) == False:
+            rhost = "http://" + rhost
+            print("[!] Failed to specify http or https."
+                  " Defaulting to %s:%s/%s/_doc" % (rhost, rport, index))
+
         headers = {"Content-Type" : "application/json"}
         try:
-            req = requests.post(rhost+":"+rport, headers=headers, body=data)
+            req = requests.post(rhost + ":" + rport + "/" + index + "/_doc",
+                                headers=headers, data=post_data)
+            if req.status_code == 201:
+                print("[+] File %s compeleted." %
+                      json.loads(post_data).get('file_name'))
             return True
         except requests.exceptions.RequestException as err:
             print("[!] Error posting data!\n\\t %s" % str(err))
@@ -73,7 +92,7 @@ class Triage():
 
     def __init__(self, binary):
         self.metadata = {} # Dict populated by private functions.
-        self.binary = binary
+        self.current_binary = binary
         self.r2obj = self.__r2_load__()
 
     def __r2_load__(self):
@@ -83,9 +102,9 @@ class Triage():
         Return: r2pipe object.
         '''
         try:
-            return r2pipe.open(self.binary)
-        except IOException:
-            print("[!] Error opening file %s." % str(self.binary))
+            return r2pipe.open(self.current_binary)
+        except IOError:
+            print("[!] Error opening file %s." % str(self.current_binary))
             sys.exit(1)
 
     def __r2_close__(self):
@@ -96,7 +115,7 @@ class Triage():
         '''
         self.r2obj.quit()
 
-    def __get_hashes__(self):
+    def get_hashes(self):
         '''
         Name: __get__hashes__
         Purpose: Leverage r2pipe to get MD5 and SHA1 hash
@@ -123,13 +142,13 @@ class Triage():
 
 
 
-    def __get_metadata__(self):
+    def get_metadata(self):
         '''
         Name: get_metadata
         Parameters: N/A
         Purpose: Populate self.matadata dict with data extracted from r2
                  command: ij
-        Return: boolean value indicating success/failure of parsing attributes.
+        Return: Boolean value indicating success/failure of parsing attributes.
         '''
         try:
             r2obj = self.r2obj.cmdj("ij")
@@ -170,7 +189,7 @@ class Triage():
                 self.metadata['has_debug_string'] = False
         return True
 
-    def __get_imports_fields__(self):
+    def get_imports_fields(self):
         '''
         Name: __get_imports_fields__
         Purpose: Create individual fields for each import based on ordinal
@@ -187,7 +206,7 @@ class Triage():
         except AttributeError:
             self.metadata["all_imports"] = "Error parsing imports"
 
-    def __get_imports__(self):
+    def get_imports(self):
         '''
         Name: __get_imports__
         Purpose: Create one field with multiple DLLs
@@ -203,7 +222,7 @@ class Triage():
             self.metadata["all_imports"] = "Error parsing imports"
 
 
-    def __get_exports_fields__(self):
+    def get_exports_fields(self):
         '''
         Name: __get_exports_fields__
         Purpose: Create individual fields for each import based on ordinal
@@ -221,7 +240,7 @@ class Triage():
             self.metadata["all_imports"] = "Error parsing imports"
 
 
-    def __get_exports__(self):
+    def get_exports(self):
         '''
         Name: __get_exports__
         Purpose: Get exports from binaries
@@ -243,10 +262,10 @@ class Triage():
         Paramters: N/A
         Return: JSON dump of metadata info.
         '''
-        self.__get_metadata__()
-        self.__get_imports__()
-        self.__get_exports__()
-        self.__get_hashes__()
+        self.get_metadata()
+        self.get_imports()
+        self.get_exports()
+        self.get_hashes()
         self.__r2_close__() # Close r2 pipe object.
         return json.dumps(self.metadata)
 
@@ -265,6 +284,9 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--rport", type=str, required=False,
                         help="Remote port to POST to.")
 
+    parser.add_argument("-i", "--index", type=str, default="samples",
+                        required=False, help="Elasticsearch Index")
+
     args = parser.parse_args()
     util = Utils()
 
@@ -279,19 +301,20 @@ if __name__ == "__main__":
         for binary in file_list:
             tobj = Triage(binary)
             data = tobj.run_triage()
-            util.elk_post(data, args.rhost, args.rport)
+            util.elk_post(data, args.rhost, args.rport, args.index)
 
     # Parse and POST single file
     elif (args.file is not None and args.rhost is not None and args.rport is not None):
         tobj = Triage(args.file)
         data = tobj.run_triage()
-        util.elk_post(data, args.rhost, args.rport)
+        util.elk_post(data, args.rhost, args.rport, args.index)
 
     # Just parse and print single file
     elif args.file is not None and args.rhost is None and args.rport is None:
         tobj = Triage(args.file)
         print(tobj.run_triage())
 
+    # Just parse and print a directory of files
     elif args.directory is not None and args.rhost is None and args.rport is None:
         file_list = util.list_files(args.directory)
         for binary in file_list:
