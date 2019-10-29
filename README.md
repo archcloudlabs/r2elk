@@ -7,7 +7,7 @@
 
 ## About The Project
 R2ELK leverages the Python bindings of [radare2's API](https://github.com/radareorg/radare2-r2pipe) 
-to extract metadata from ELF and PE files.
+to extract metadata from ELF and PE files. 
 
 Data that is attempted to be extracted is as follows:
 * File name 
@@ -16,7 +16,7 @@ Data that is attempted to be extracted is as follows:
 * SHA1 hash
 * Architecture
 * Binary size
-* Programming language Used
+* Programming language Used (*identified by r2*)
 * Compiler info
 * Compiled time
 * Stripped
@@ -54,3 +54,8 @@ Logstash". By default the index is "samples"*
 ```
 ./r2elk.py --file /bin/ls --rhost http://127.0.0.1 --rport 9200 --index testing
 ```
+
+### Troubleshooting
+* Do you have appropriate permission for reading files in specific directory?
+* Anything that's not a PE/ELF is ignored.
+* Symlinks are not followed.
