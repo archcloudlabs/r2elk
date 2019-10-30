@@ -55,6 +55,32 @@ Logstash". By default the index is "samples"*
 ./r2elk.py --file /bin/ls --rhost http://127.0.0.1 --rport 9200 --index testing
 ```
 
+### Indexing A Field Per-Function 
+If you're interested in having a single field per import/export opposed to a
+single field with a comma separated string of imports/exports, modify the
+[run_triage](https://github.com/jaredestroud/r2elk/blob/master/r2elk.py#L258) function to call ``` self.get_import_fields() ``` and
+``` self.get_export_fields() ```
+
+Example:
+```
+
+    def run_triage(self):
+        '''
+        Name: run_triage
+        Purpose: Perform metadata triage of binaries.
+        Paramters: N/A
+        Return: JSON dump of metadata info.
+        '''
+        self.get_metadata()
+        self.get_imports_fields()
+        self.get_exports_fields()
+        self.get_hashes()
+        self.__r2_close__() # Close r2 pipe object.
+        return json.dumps(self.metadata)
+```
+
+
+
 ### Troubleshooting
 * Do you have appropriate permission for reading files in specific directory?
 * Anything that's not a PE/ELF is ignored.
