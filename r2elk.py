@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
     R2ELK is a Python binary parsing utility that leverages the Radare2 Python
     API. Metadata extracted from the binaries is then presented to the end user
