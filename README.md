@@ -83,5 +83,4 @@ Example:
 
 ### Troubleshooting
 * Do you have appropriate permission for reading files in specific directory?
-* Anything that's not a PE/ELF is ignored.
 * Symlinks are not followed.
