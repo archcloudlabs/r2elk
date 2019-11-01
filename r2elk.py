@@ -255,6 +255,37 @@ class Triage():
         except AttributeError:
             self.metadata["all_exports"] = "Error parsing exports"
 
+    def get_strings_fields(self):
+        '''
+        Name: get_strings_fields
+        Purpose: Extract strings from binaries and create individual fields.
+        Return: N/A, populate self.metadata dict.
+        '''
+        try:
+            string_json = self.r2obj.cmdj('izj')
+            string_fields = []
+            for count, string in enumerate(string_json):
+                self.metadata['string_' + str(count)] = string.get('string')
+        except AttributeError:
+            self.metadata["binary_strings"] = "Error parsing strings"
+
+    def get_strings(self):
+        '''
+        Name: get_strings
+        Purpose: Extract strings from binaries.
+        Return: N/A, populate self.metadata dict.
+        '''
+        try:
+            string_json = self.r2obj.cmdj('izj')
+            string_fields = []
+            for string in string_json:
+                string_fields.append(string.get('string'))
+            self.metadata["strings"] = string_fields
+        except AttributeError:
+            self.metadata["binary_strings"] = "Error parsing strings"
+
+
+
     def run_triage(self):
         '''
         Name: run_triage
@@ -266,6 +297,7 @@ class Triage():
         self.get_imports()
         self.get_exports()
         self.get_hashes()
+        self.get_strings()
         self.__r2_close__() # Close r2 pipe object.
         return json.dumps(self.metadata)
 
