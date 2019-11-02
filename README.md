@@ -22,6 +22,7 @@ Data that is attempted to be extracted is as follows:
 * Stripped
 * Static
 * Signed
+* Strings
 * PDB file paths
 * Base address
 * Imports
