@@ -9,7 +9,7 @@
 R2ELK leverages the Python bindings of [radare2's API](https://github.com/radareorg/radare2-r2pipe) 
 to extract metadata from ELF and PE files. 
 
-Data that is attempted to be extracted is as follows:
+Data that is attempted to be extracted/identified is as follows:
 * File name 
 * File format
 * MD5 hash
@@ -27,12 +27,14 @@ Data that is attempted to be extracted is as follows:
 * Base address
 * Imports
 * Exports
+* Yara Rule matching
 
 ## Installation
 
 ### Dependencies
 * [Requests](https://github.com/psf/requests)
 * [r2pipe](https://github.com/radareorg/radare2-r2pipe)
+* [yara-python](https://github.com/VirusTotal/yara-python)
 ```
 sudo pip3 install -r requirements.txt
 ```
@@ -54,6 +56,11 @@ Logstash". By default the index is "samples"*
 * Get metadata from a directory of binaries and POST to Elastic server:
 ```
 ./r2elk.py --file /bin/ls --rhost http://127.0.0.1 --rport 9200 --index testing
+```
+
+* Run yara file against binary
+```
+./r2elk.py -f /bin/ls --yara ./rules/malware/malware_samples.yar 
 ```
 
 ### Indexing A Field Per-Function 
