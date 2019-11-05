@@ -5,16 +5,18 @@
     in JSON format.
 """
 try:
+    from os import access
+    from os import R_OK
+    from datetime import datetime
+    from stat import S_ISREG
     import sys
     import os
-    from os import access, R_OK
     import errno
     import json
     import argparse
-    from datetime import datetime
-    from stat import S_ISREG
     import r2pipe
     import requests
+    import yara
 
 except ImportError as import_err:
     print("[!] Missing package %s." % str(import_err))
@@ -90,10 +92,13 @@ class Triage():
     Perform binary metadata analysis via R2 and cleanup output for ES ingestion.
     '''
 
-    def __init__(self, binary):
+    def __init__(self, binary, yara_rule_file=None):
         self.metadata = {} # Dict populated by private functions.
         self.current_binary = binary
         self.r2obj = self.__r2_load__()
+
+        if yara_rule_file is not None:
+            self.yara_rules = yara_rule_file
 
     def __r2_load__(self):
         '''
@@ -128,7 +133,6 @@ class Triage():
             self.metadata["md5"] = "Error getting MD5 for file"
             self.metadata["sha1"] = "Error getting SHA1 for file"
 
-
     def __check_parsable_file__(self, ftype):
         '''
         Name: __check_parsable_file__
@@ -139,8 +143,6 @@ class Triage():
         if ftype not in valid_types:
             return False
         return True
-
-
 
     def get_metadata(self):
         '''
@@ -263,7 +265,6 @@ class Triage():
         '''
         try:
             string_json = self.r2obj.cmdj('izj')
-            string_fields = []
             for count, string in enumerate(string_json):
                 self.metadata['string_' + str(count)] = string.get('string')
         except AttributeError:
@@ -284,7 +285,23 @@ class Triage():
         except AttributeError:
             self.metadata["binary_strings"] = "Error parsing strings"
 
+    def yara_scan(self, fname):
+        '''
+        Name:yara_scan
+        Purpose: run Yara rules against a binary
+        Parameters: [fname] binary file to read in
+        Return: [string] comma separated values of matched yara rules.
+        '''
+        try:
+            yaraObj = yara.compile(self.yara_rules)
+        except AttributeError as err:
+            print("[!] Attribute error: %s" % str(err))
+            sys.exit(1)
+        except yara.Error as err:
+            print("[!] Error: %s" % str(err))
+            sys.exit(1)
 
+        self.metadata["yara_rules"] = str(yaraObj.match(fname)).replace("[", "").replace("]", "")
 
     def run_triage(self):
         '''
@@ -297,7 +314,8 @@ class Triage():
         self.get_imports()
         self.get_exports()
         self.get_hashes()
-        self.get_strings()
+        #self.get_strings()
+        self.yara_scan(self.current_binary)
         self.__r2_close__() # Close r2 pipe object.
         return json.dumps(self.metadata)
 
@@ -319,6 +337,9 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--index", type=str, default="samples",
                         required=False, help="Elasticsearch Index")
 
+    parser.add_argument("-y", "--yara", type=str, required=False,
+                        help="Yara files to process")
+
     args = parser.parse_args()
     util = Utils()
 
@@ -331,26 +352,26 @@ if __name__ == "__main__":
     elif (args.directory is not None and args.rhost is not None and args.rport is not None):
         file_list = util.list_files(args.directory)
         for binary in file_list:
-            tobj = Triage(binary)
+            tobj = Triage(binary, args.yara)
             data = tobj.run_triage()
             util.elk_post(data, args.rhost, args.rport, args.index)
 
     # Parse and POST single file
     elif (args.file is not None and args.rhost is not None and args.rport is not None):
-        tobj = Triage(args.file)
+        tobj = Triage(args.file, args.yara)
         data = tobj.run_triage()
         util.elk_post(data, args.rhost, args.rport, args.index)
 
     # Just parse and print single file
     elif args.file is not None and args.rhost is None and args.rport is None:
-        tobj = Triage(args.file)
+        tobj = Triage(args.file, args.yara)
         print(tobj.run_triage())
 
     # Just parse and print a directory of files
     elif args.directory is not None and args.rhost is None and args.rport is None:
         file_list = util.list_files(args.directory)
         for binary in file_list:
-            tobj = Triage(binary)
+            tobj = Triage(binary, args.yara)
             print(tobj.run_triage())
     else:
         parser.print_help()
