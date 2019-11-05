@@ -1,2 +1,3 @@
 requests
 r2pipe
+yara-python
