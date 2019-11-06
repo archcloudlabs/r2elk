@@ -288,9 +288,9 @@ class Triage():
     def yara_scan(self, fname):
         '''
         Name:yara_scan
-        Purpose: run Yara rules against a binary
+        Purpose: run Yara rules against a binary and return matching rule set.
         Parameters: [fname] binary file to read in
-        Return: [string] comma separated values of matched yara rules.
+        Return: N/A, populates self.metadata dict.
         '''
         try:
             yaraObj = yara.compile(self.yara_rules)
@@ -301,7 +301,12 @@ class Triage():
             print("[!] Error: %s" % str(err))
             sys.exit(1)
 
-        self.metadata["yara_rules"] = str(yaraObj.match(fname)).replace("[", "").replace("]", "")
+        matches = yaraObj.match(fname)
+        yara_matches = []
+        for match in matches:
+            yara_matches.append(match.rule)
+
+        self.metadata["yara_rules"] = yara_matches
 
     def run_triage(self):
         '''
