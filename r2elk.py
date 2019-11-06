@@ -178,7 +178,7 @@ class Triage():
             self.metadata['compiler'] = bin_json.get('compiler')
             self.metadata['compiletime'] = bin_json.get('compiled')
             self.metadata['stripped'] = bin_json.get('stripped')
-            self.metadata['static'] = bin_json.get('sstatic')
+            self.metadata['static'] = bin_json.get('static')
             self.metadata['signed'] = bin_json.get('signed')
             self.metadata['dbg_file'] = bin_json.get('dbg_file')
             self.metadata['endian'] = bin_json.get('endian')
