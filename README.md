@@ -39,6 +39,8 @@ Data that is attempted to be extracted/identified is as follows:
 sudo pip3 install -r requirements.txt
 ```
 
+*If using  yara rules for sample tagging*: ```git submodule update --init```
+
 ## Example Usage
 *Note: The examples below are for direct ingestion into Elasticsearch not
 Logstash". By default the index is "samples"*
