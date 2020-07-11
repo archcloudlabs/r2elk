@@ -307,7 +307,7 @@ class Triage():
 
         self.metadata["yara_rules"] = yara_matches
 
-    def run_triage(self):
+    def run_triage(self, yarascan=None):
         """
         Name: run_triage
         Purpose: Perform metadata triage of binaries.
@@ -319,7 +319,9 @@ class Triage():
         self.get_exports()
         self.get_hashes()
         # self.get_strings()
-        self.yara_scan(self.current_binary)
+        if yarascan is not None:
+            self.yara_scan(self.current_binary)
+
         self.__r2_close__()  # Close r2 pipe object.
         return json.dumps(self.metadata)
 
@@ -342,8 +344,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--index", type=str, default="samples",
                         required=False, help="Elasticsearch Index")
 
-    parser.add_argument("-y", "--yara", type=str, required=False,
-                        help="Yara files to process")
+    parser.add_argument("-y", "--yara", type=str, default=None, required=False, help="Yara files to process")
 
     args = parser.parse_args()
     util = Utils()
@@ -358,25 +359,25 @@ if __name__ == "__main__":
         file_list = util.list_files(args.directory)
         for binary in file_list:
             tobj = Triage(binary, args.yara)
-            data = tobj.run_triage()
+            data = tobj.run_triage(args.yara)
             util.elk_post(data, args.rhost, args.rport, args.index)
 
     # Parse and POST single file
     elif args.file is not None and args.rhost is not None and args.rport is not None:
         tobj = Triage(args.file, args.yara)
-        data = tobj.run_triage()
+        data = tobj.run_triage(args.yara)
         util.elk_post(data, args.rhost, args.rport, args.index)
 
     # Just parse and print single file
     elif args.file is not None and args.rhost is None and args.rport is None:
         tobj = Triage(args.file, args.yara)
-        print(tobj.run_triage())
+        print(tobj.run_triage(args.yara))
 
     # Just parse and print a directory of files
     elif args.directory is not None and args.rhost is None and args.rport is None:
         file_list = util.list_files(args.directory)
         for binary in file_list:
             tobj = Triage(binary, args.yara)
-            print(tobj.run_triage())
+            print(tobj.run_triage(args.yara))
     else:
         parser.print_help()
