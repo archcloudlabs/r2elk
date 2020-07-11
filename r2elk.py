@@ -24,19 +24,19 @@ except ImportError as import_err:
 
 
 class Utils():
-    '''
+    """
     Helper utilities to aid in loading binaries for triage.
-    '''
+    """
 
     def list_files(self, directory):
-        '''
+        """
         Name: list_files
         Purpose: List all files within a directory and run R2 triage methods.
                  This method will not follow symlinks.
                  https://docs.python.org/3.7/library/stat.html
         Parameters: [directory] string path to directory of binaries.
         Return: List of files within a directory.
-        '''
+        """
         normal_files = []
         for filename in os.listdir(directory):
             file_path = os.path.join(directory, filename)
@@ -53,29 +53,29 @@ class Utils():
         return normal_files
 
     def __check__url__(self, url):
-        '''
+        """
         Name: __check_url__
         Parameters: [url] string value
         Purpose: Verify that HTTP or HTTPS is within the CLI remote URL.
-        '''
+        """
         if url[0:4] != ("http" or "https"):
             return False
         return True
 
     def elk_post(self, post_data, rhost, rport, index):
-        '''
+        """
         Name: elk_post
         Purpose: Post JSON data to Elastic endpoint (could also be logstash)
         Parameters: [rhost] remote Elasticserver to post to.
             [rport] remote port that Elastic is running on.
         Return: boolean based on success or failure of HTTP POST.
-        '''
-        if self.__check__url__(rhost) == False:
+        """
+        if not self.__check__url__(rhost):
             rhost = "http://" + rhost
             print("[!] Failed to specify http or https."
                   " Defaulting to %s:%s/%s/_doc" % (rhost, rport, index))
 
-        headers = {"Content-Type" : "application/json"}
+        headers = {"Content-Type": "application/json"}
         try:
             req = requests.post(rhost + ":" + rport + "/" + index + "/_doc",
                                 headers=headers, data=post_data)
@@ -87,13 +87,14 @@ class Utils():
             print("[!] Error posting data!\n\\t %s" % str(err))
             return False
 
+
 class Triage():
-    '''
+    """
     Perform binary metadata analysis via R2 and cleanup output for ES ingestion.
-    '''
+    """
 
     def __init__(self, binary, yara_rule_file=None):
-        self.metadata = {} # Dict populated by private functions.
+        self.metadata = {}  # Dict populated by private functions.
         self.current_binary = binary
         self.r2obj = self.__r2_load__()
 
@@ -101,11 +102,11 @@ class Triage():
             self.yara_rules = yara_rule_file
 
     def __r2_load__(self):
-        '''
+        """
         Name: __r2_load__
         Purpose: Create a r2 instance for triage object to use.
         Return: r2pipe object.
-        '''
+        """
         try:
             return r2pipe.open(self.current_binary)
         except IOError:
@@ -113,19 +114,19 @@ class Triage():
             sys.exit(1)
 
     def __r2_close__(self):
-        '''
+        """
         Name: close radare2 handle
         Parameters: N/A
         Return: N/A
-        '''
+        """
         self.r2obj.quit()
 
     def get_hashes(self):
-        '''
+        """
         Name: __get__hashes__
         Purpose: Leverage r2pipe to get MD5 and SHA1 hash
         Return: N/A, populate self.metadata dict.
-        '''
+        """
         try:
             self.metadata["md5"] = self.r2obj.cmdj("itj").get("md5")
             self.metadata["sha1"] = self.r2obj.cmdj("itj").get("sha1")
@@ -134,29 +135,29 @@ class Triage():
             self.metadata["sha1"] = "Error getting SHA1 for file"
 
     def __check_parsable_file__(self, ftype):
-        '''
+        """
         Name: __check_parsable_file__
         Purpose: Check that a valid binary file is trying to be parsed.
         Return: Boolean indicating whether or not its a valid file type.
-        '''
+        """
         valid_types = ["pe", "elf", "elf64", "pe64", "pe64+", "pe32+", "pe+"]
         if ftype not in valid_types:
             return False
         return True
 
     def get_metadata(self):
-        '''
+        """
         Name: get_metadata
         Parameters: N/A
         Purpose: Populate self.matadata dict with data extracted from r2
                  command: ij
         Return: Boolean value indicating success/failure of parsing attributes.
-        '''
+        """
         try:
             r2obj = self.r2obj.cmdj("ij")
         except IOError as err:
             print("[!] IOError %s ." % str(err))
-            if err.errno == errno.EPIPE: # Broken pipe potentially due to perms
+            if err.errno == errno.EPIPE:  # Broken pipe potentially due to perms
                 print("[!] Broken pipe, potentially due to permission issues or"
                       "symlink no longer existing")
                 return False
@@ -171,7 +172,7 @@ class Triage():
         self.metadata['file_name'] = core_json.get('file')
         self.metadata['file_format'] = core_json.get('format')
 
-        if self.__check_parsable_file__(self.metadata['file_format'].lower()) == True:
+        if self.__check_parsable_file__(self.metadata['file_format'].lower()):
             self.metadata['architecture'] = bin_json.get('arch')
             self.metadata['binary_size'] = core_json.get('humansz')
             self.metadata['language'] = bin_json.get('lang')
@@ -192,28 +193,28 @@ class Triage():
         return True
 
     def get_imports_fields(self):
-        '''
+        """
         Name: __get_imports_fields__
         Purpose: Create individual fields for each import based on ordinal
         Return: N/A, populate self.metadata dict.
-        '''
+        """
         try:
             import_json = self.r2obj.cmdj('iaj').get('imports')
             import_list = []
             for i in import_json:
                 # Create a field per-ordinal that's created
-                self.metadata['import_ordinal_'+str(i.get('ordinal'))] = i.get('name')
-                import_list.append(i.get('name')) # crete large list of all imports
+                self.metadata['import_ordinal_' + str(i.get('ordinal'))] = i.get('name')
+                import_list.append(i.get('name'))  # crete large list of all imports
             self.metadata["all_imports"] = import_list
         except AttributeError:
             self.metadata["all_imports"] = "Error parsing imports"
 
     def get_imports(self):
-        '''
+        """
         Name: __get_imports__
         Purpose: Create one field with multiple DLLs
         Return: N/A, populate self.metadata dict.
-        '''
+        """
         try:
             import_json = self.r2obj.cmdj('iaj').get('imports')
             import_list = []
@@ -223,31 +224,29 @@ class Triage():
         except AttributeError:
             self.metadata["all_imports"] = "Error parsing imports"
 
-
     def get_exports_fields(self):
-        '''
+        """
         Name: __get_exports_fields__
         Purpose: Create individual fields for each import based on ordinal
         Return: N/A, populate self.metadata dict.
-        '''
+        """
         try:
             import_json = self.r2obj.cmdj('iaj').get('imports')
             import_list = []
             for i in import_json:
                 # Create a field per-ordinal that's created
-                self.metadata['import_ordinal_'+str(i.get('ordinal'))] = i.get('name')
-                import_list.append(i.get('name')) # crete large list of all imports
+                self.metadata['import_ordinal_' + str(i.get('ordinal'))] = i.get('name')
+                import_list.append(i.get('name'))  # crete large list of all imports
             self.metadata["all_imports"] = import_list
         except AttributeError:
             self.metadata["all_imports"] = "Error parsing imports"
 
-
     def get_exports(self):
-        '''
+        """
         Name: __get_exports__
         Purpose: Get exports from binaries
         Return: N/A, populate self.metadata dict.
-        '''
+        """
         try:
             export_json = self.r2obj.cmdj('iaj').get('exports')
             export_list = []
@@ -258,11 +257,11 @@ class Triage():
             self.metadata["all_exports"] = "Error parsing exports"
 
     def get_strings_fields(self):
-        '''
+        """
         Name: get_strings_fields
         Purpose: Extract strings from binaries and create individual fields.
         Return: N/A, populate self.metadata dict.
-        '''
+        """
         try:
             string_json = self.r2obj.cmdj('izj')
             for count, string in enumerate(string_json):
@@ -271,11 +270,11 @@ class Triage():
             self.metadata["binary_strings"] = "Error parsing strings"
 
     def get_strings(self):
-        '''
+        """
         Name: get_strings
         Purpose: Extract strings from binaries.
         Return: N/A, populate self.metadata dict.
-        '''
+        """
         try:
             string_json = self.r2obj.cmdj('izj')
             string_fields = []
@@ -286,12 +285,12 @@ class Triage():
             self.metadata["binary_strings"] = "Error parsing strings"
 
     def yara_scan(self, fname):
-        '''
+        """
         Name:yara_scan
         Purpose: run Yara rules against a binary and return matching rule set.
         Parameters: [fname] binary file to read in
         Return: N/A, populates self.metadata dict.
-        '''
+        """
         try:
             yaraObj = yara.compile(self.yara_rules)
         except AttributeError as err:
@@ -309,20 +308,21 @@ class Triage():
         self.metadata["yara_rules"] = yara_matches
 
     def run_triage(self):
-        '''
+        """
         Name: run_triage
         Purpose: Perform metadata triage of binaries.
         Paramters: N/A
         Return: JSON dump of metadata info.
-        '''
+        """
         self.get_metadata()
         self.get_imports()
         self.get_exports()
         self.get_hashes()
-        #self.get_strings()
+        # self.get_strings()
         self.yara_scan(self.current_binary)
-        self.__r2_close__() # Close r2 pipe object.
+        self.__r2_close__()  # Close r2 pipe object.
         return json.dumps(self.metadata)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -354,7 +354,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Parse and POST a directory of files
-    elif (args.directory is not None and args.rhost is not None and args.rport is not None):
+    elif args.directory is not None and args.rhost is not None and args.rport is not None:
         file_list = util.list_files(args.directory)
         for binary in file_list:
             tobj = Triage(binary, args.yara)
@@ -362,7 +362,7 @@ if __name__ == "__main__":
             util.elk_post(data, args.rhost, args.rport, args.index)
 
     # Parse and POST single file
-    elif (args.file is not None and args.rhost is not None and args.rport is not None):
+    elif args.file is not None and args.rhost is not None and args.rport is not None:
         tobj = Triage(args.file, args.yara)
         data = tobj.run_triage()
         util.elk_post(data, args.rhost, args.rport, args.index)
