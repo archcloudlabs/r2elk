@@ -17,11 +17,10 @@ try:
     import r2pipe
     import requests
     import yara
-
+    import hashlib
 except ImportError as import_err:
     print("[!] Missing package %s." % str(import_err))
     sys.exit(1)
-
 
 class Utils():
     """
@@ -128,8 +127,8 @@ class Triage():
         Return: N/A, populate self.metadata dict.
         """
         try:
-            self.metadata["md5"] = self.r2obj.cmdj("itj").get("md5")
-            self.metadata["sha1"] = self.r2obj.cmdj("itj").get("sha1")
+            self.metadata["md5"] = hashlib.md5(open(self.current_binary, 'rb')).hexdigest()
+            self.metadata["sha1"] = hashlib.sha256(open(self.current_binary, 'rb')).hexdigest()
         except:
             self.metadata["md5"] = "Error getting MD5 for file"
             self.metadata["sha1"] = "Error getting SHA1 for file"
