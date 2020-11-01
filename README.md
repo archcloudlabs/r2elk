@@ -7,7 +7,8 @@
 
 ## About The Project
 R2ELK leverages the Python bindings of [radare2's API](https://github.com/radareorg/radare2-r2pipe) 
-to extract metadata from ELF and PE files. 
+to extract metadata from ELF and PE files and The [official](https://github.com/Yara-Rules/rules/tree/master) 
+YARA rule repo as a submodule for matching.
 
 Data that is attempted to be extracted/identified is as follows:
 * File name 
