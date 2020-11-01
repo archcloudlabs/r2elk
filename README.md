@@ -95,3 +95,10 @@ Example:
 ### Troubleshooting
 * Do you have appropriate permission for reading files in specific directory?
 * Symlinks are not followed.
+
+### Known Issues
+If you're having issues processing yara rules and encounter an error below, you're likely missing a 3rd party package (pe/cuckoo).
+```
+[!] Error: ./rules/././capabilities/capabilities.yar(450): can't open include file: $FILE_NAME_HERE
+```
+
