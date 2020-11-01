@@ -126,12 +126,15 @@ class Triage():
         Purpose: Leverage r2pipe to get MD5 and SHA1 hash
         Return: N/A, populate self.metadata dict.
         """
+        hashes = self.r2obj.cmdj('itj')
         try:
-            self.metadata["md5"] = hashlib.md5(open(self.current_binary, 'rb')).hexdigest()
-            self.metadata["sha1"] = hashlib.sha256(open(self.current_binary, 'rb')).hexdigest()
+            self.metadata["md5"] = hashes.get("md5")
+            self.metadata["sha1"] = hashes.get("sha1")
+            self.metadata["sha256"] = hashes.get("sha256")
         except:
             self.metadata["md5"] = "Error getting MD5 for file"
             self.metadata["sha1"] = "Error getting SHA1 for file"
+            self.metadata["sha256"] = "Error getting SHA256 for file"
 
     def __check_parsable_file__(self, ftype):
         """
@@ -268,20 +271,24 @@ class Triage():
         except AttributeError:
             self.metadata["binary_strings"] = "Error parsing strings"
 
-    def get_strings(self):
+    def get_strings(self, max_length=30):
         """
         Name: get_strings
+        Param: max_length, integer to specify how many values to pull vs all of the strings from within a binary.
         Purpose: Extract strings from binaries.
         Return: N/A, populate self.metadata dict.
         """
         try:
             string_json = self.r2obj.cmdj('izj')
             string_fields = []
-            for string in string_json:
-                string_fields.append(string.get('string'))
-            self.metadata["strings"] = string_fields
+            try:
+                for string in string_json[0:max_length]:
+                    string_fields.append(string.get('string'))
+                self.metadata["strings"] = string_fields
+            except IndexError:
+                self.metadata["strings"] = "Error parsing strings"
         except AttributeError:
-            self.metadata["binary_strings"] = "Error parsing strings"
+            self.metadata["strings"] = "Error parsing strings"
 
     def yara_scan(self, fname):
         """
@@ -317,7 +324,7 @@ class Triage():
         self.get_imports()
         self.get_exports()
         self.get_hashes()
-        # self.get_strings()
+        self.get_strings()
         if yarascan is not None:
             self.yara_scan(self.current_binary)
 
