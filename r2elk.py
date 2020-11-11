@@ -240,6 +240,7 @@ class Triage:
             for i in import_json:
                 import_list.append(i.get('name'))
             self.metadata["all_imports"] = import_list
+            self.metadata["num_of_imports"] = len(import_list)
         except AttributeError:
             self.metadata["all_imports"] = "Error parsing imports"
 
@@ -272,6 +273,7 @@ class Triage:
             for i in export_json:
                 export_list.append(i.get('name'))
             self.metadata["all_exports"] = export_list
+            self.metadata["num_of_exports"] = len(export_list)
         except AttributeError:
             self.metadata["all_exports"] = "Error parsing exports"
 
