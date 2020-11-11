@@ -97,8 +97,8 @@ class Utils:
         """
 
         try:
-            import pdb; pdb.set_trace()
-            with open(fname+".json", json_blob) as fout:
+            name = fname.split("/")[-1]
+            with open(name+".json", "w") as fout:
                 fout.write(json.dumps(json_blob))
         except IOError as io_err:
             print("io_err")
@@ -368,7 +368,7 @@ if __name__ == "__main__":
                         required=False, help="Elasticsearch Index")
 
     parser.add_argument("-y", "--yara", type=str, default=None, required=False, help="Yara files to process")
-    parser.add_argument("-v", "--verbose", action="store_true", default=False, required=False, help="Write data out")
+    parser.add_argument("-v", "--verbose", action="store_true", default=None, required=False, help="Write data out")
 
     args = parser.parse_args()
     util = Utils()
