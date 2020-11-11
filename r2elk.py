@@ -22,7 +22,7 @@ except ImportError as import_err:
     print("[!] Missing package %s." % str(import_err))
     sys.exit(1)
 
-class Utils():
+class Utils:
     """
     Helper utilities to aid in loading binaries for triage.
     """
@@ -86,15 +86,29 @@ class Utils():
             print("[!] Error posting data!\n\\t %s" % str(err))
             return False
 
+    def write_output(self, fname, json_blob):
+        """
+        Write json output to disk for filebeats or other log shipper
+        fname: file name to write to
+        json_blob: JSON to write data to.
+        """
 
-class Triage():
+        try:
+            import pdb; pdb.set_trace()
+            with open(fname+".json", json_blob) as fout:
+                fout.write(json.dumps(json_blob))
+        except IOError as io_err:
+            print("io_err")
+
+
+class Triage:
     """
     Perform binary metadata analysis via R2 and cleanup output for ES ingestion.
     """
 
-    def __init__(self, binary, yara_rule_file=None):
+    def __init__(self, fname, yara_rule_file=None):
         self.metadata = {}  # Dict populated by private functions.
-        self.current_binary = binary
+        self.current_binary = fname
         self.r2obj = self.__r2_load__()
 
         if yara_rule_file is not None:
@@ -338,7 +352,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--directory", type=str, required=False,
                         help="Directory of files to process.")
 
-    parser.add_argument("-f", "--file", type=str, required=False,
+    parser.add_argument("-f", "--file", type=str, default=None, required=False,
                         help="Single file to process.")
 
     parser.add_argument("-t", "--rhost", type=str, required=False,
@@ -351,6 +365,7 @@ if __name__ == "__main__":
                         required=False, help="Elasticsearch Index")
 
     parser.add_argument("-y", "--yara", type=str, default=None, required=False, help="Yara files to process")
+    parser.add_argument("-v", "--verbose", action="store_true", default=False, required=False, help="Write data out")
 
     args = parser.parse_args()
     util = Utils()
@@ -377,13 +392,19 @@ if __name__ == "__main__":
     # Just parse and print single file
     elif args.file is not None and args.rhost is None and args.rport is None:
         tobj = Triage(args.file, args.yara)
-        print(tobj.run_triage(args.yara))
+        json_data = tobj.run_triage(args.yara)
+        if args.verbose:
+            print(json_data)
+        util.write_output(args.file, json_data)
 
     # Just parse and print a directory of files
     elif args.directory is not None and args.rhost is None and args.rport is None:
         file_list = util.list_files(args.directory)
         for binary in file_list:
             tobj = Triage(binary, args.yara)
-            print(tobj.run_triage(args.yara))
+            json_data = tobj.run_triage(args.yara)
+            if args.verbose:
+                print(json_data)
+            util.write_output(args.file, json_data)
     else:
         parser.print_help()
