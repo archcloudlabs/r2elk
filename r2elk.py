@@ -41,6 +41,9 @@ class Utils:
             file_path = os.path.join(directory, filename)
             try:
                 file_info = os.lstat(file_path)
+            except NotADirectoryError as non_dir:
+                print("[!] Error, %s" % non_dir)
+                sys.exit(1)
             except EnvironmentError:
                 continue
             else:
