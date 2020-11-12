@@ -22,6 +22,7 @@ except ImportError as import_err:
     print("[!] Missing package %s." % str(import_err))
     sys.exit(1)
 
+
 class Utils:
     """
     Helper utilities to aid in loading binaries for triage.
@@ -97,8 +98,9 @@ class Utils:
         """
 
         try:
-            name = fname.split("/")[-1]
-            with open(name+".json", "w") as fout:
+            if "/" in fname:
+                fname = fname.split("/")[-1]
+            with open(fname+".json", "w") as fout:
                 fout.write(json.dumps(json_blob))
         except IOError as io_err:
             print("io_err")
@@ -163,6 +165,18 @@ class Triage:
         if ftype not in valid_types:
             return False
         return True
+
+    def get_sections(self):
+        """
+        Name: __get__hashes__
+        Purpose: Leverage r2pipe to get MD5 and SHA1 hash
+        Return: N/A, populate self.metadata dict.
+        """
+        sections = self.r2obj.cmdj('iSj')
+        try:
+            self.metadata["sections"] = sections
+        except:
+            self.metadata["sections"] = "Error getting executable section information"
 
     def get_metadata(self):
         """
@@ -344,6 +358,7 @@ class Triage:
         self.get_exports()
         self.get_hashes()
         self.get_strings()
+        self.get_sections()
         if yarascan is not None:
             self.yara_scan(self.current_binary)
 
@@ -410,6 +425,5 @@ if __name__ == "__main__":
             json_data = tobj.run_triage(args.yara)
             if args.verbose:
                 print(json_data)
-            util.write_output(args.file, json_data)
     else:
         parser.print_help()
