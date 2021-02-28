@@ -83,7 +83,7 @@ class Utils:
             req = requests.post(rhost + ":" + rport + "/" + index + "/_doc",
                                 headers=headers, data=post_data)
             if req.status_code == 201:
-                print("[+] File %s compeleted." %
+                print("[+] File %s completed." %
                       json.loads(post_data).get('file_name'))
             return True
         except requests.exceptions.RequestException as err:
