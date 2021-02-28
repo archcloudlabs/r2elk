@@ -304,7 +304,7 @@ class Triage:
         except AttributeError:
             self.metadata["binary_strings"] = "Error parsing strings"
 
-    def get_strings(self, max_length=30):
+    def get_strings(self, max_length=100):
         """
         Name: get_strings
         Param: max_length, integer to specify how many values to pull vs all of the strings from within a binary.
