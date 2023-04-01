@@ -17,7 +17,7 @@ try:
     import r2pipe
     import requests
     import yara
-    import pefile
+    import pefile # used for imphash
 except ImportError as import_err:
     print("[!] Missing package %s." % str(import_err))
     sys.exit(1)
