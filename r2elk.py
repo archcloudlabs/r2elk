@@ -148,7 +148,7 @@ class Triage:
         hashes = self.r2obj.cmdj('itj')
 
         try:
-            self.metadata["imphash"] = pefile.PE(self.current_binary)
+            self.metadata["imphash"] = pefile.PE(self.current_binary).get_imphash()
         except:
             self.metadata["imphash"] = "Error getting IMPHash for file"
 
