@@ -17,16 +17,14 @@ try:
     import r2pipe
     import requests
     import yara
-    import pefile # used for imphash
+    import pefile  # used for imphash
 except ImportError as import_err:
     print("[!] Missing package %s." % str(import_err))
     sys.exit(1)
 
 
 class Utils:
-    """
-    Helper utilities to aid in loading binaries for triage.
-    """
+    """Helper utilities to aid in loading binaries for triage."""
 
     def list_files(self, directory):
         """
