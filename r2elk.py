@@ -18,6 +18,7 @@ try:
     import requests
     import yara
     import pefile  # used for imphash
+    import ssdeep  # used for ssdeep hashing
 except ImportError as import_err:
     print("[!] Missing package %s." % str(import_err))
     sys.exit(1)
@@ -149,6 +150,11 @@ class Triage:
             self.metadata["imphash"] = pefile.PE(self.current_binary).get_imphash()
         except:
             self.metadata["imphash"] = "Error getting IMPHash for file"
+
+        try:
+            self.metadata["ssdeep"] = ssdeep.hash(self.current_binary)
+        except:
+            self.metadata["ssdeep"] = "Error getting IMPHash for file"
 
         try:
             self.metadata["md5"] = hashes.get("md5")
