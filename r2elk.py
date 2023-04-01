@@ -17,7 +17,7 @@ try:
     import r2pipe
     import requests
     import yara
-    import hashlib
+    import pefile
 except ImportError as import_err:
     print("[!] Missing package %s." % str(import_err))
     sys.exit(1)
@@ -146,6 +146,12 @@ class Triage:
         Return: N/A, populate self.metadata dict.
         """
         hashes = self.r2obj.cmdj('itj')
+
+        try:
+            self.metadata["imphash"] = pefile.PE(self.current_binary)
+        except:
+            self.metadata["imphash"] = "Error getting IMPHash for file"
+
         try:
             self.metadata["md5"] = hashes.get("md5")
             self.metadata["sha1"] = hashes.get("sha1")
@@ -180,10 +186,12 @@ class Triage:
 
     def get_metadata(self):
         """
-        Name: get_metadata
+        Name: get_metadata.
+
         Parameters: N/A
-        Purpose: Populate self.matadata dict with data extracted from r2
+        Purpose: Populate self.matadata dict with data extracted from r2.
                  command: ij
+
         Return: Boolean value indicating success/failure of parsing attributes.
         """
         try:
